@@ -23,11 +23,23 @@ import * as JingleSessionState from "./JingleSessionState";
  */
 var IQ_TIMEOUT = 10000;
 
-// Jingle stuff
+/**
+ * FIXME fill docs
+ * @param me
+ * @param sid
+ * @param peerjid
+ * @param connection
+ * @param media_constraints
+ * @param ice_config
+ * @param {object} options
+ * @param {boolean} options.webrtcIceUdpDisable
+ * @param {boolean} options.webrtcIceTcpDisable
+ * @constructor
+ */
 function JingleSessionPC(me, sid, peerjid, connection,
-                         media_constraints, ice_config, service) {
+                         media_constraints, ice_config, options) {
     JingleSession.call(this, me, sid, peerjid, connection,
-                       media_constraints, ice_config, service);
+                       media_constraints, ice_config);
 
     this.lasticecandidate = false;
     this.closed = false;
@@ -60,14 +72,14 @@ function JingleSessionPC(me, sid, peerjid, connection,
      */
     this.ssrcOwners = {};
 
-    this.webrtcIceUdpDisable = !!this.service.options.webrtcIceUdpDisable;
-    this.webrtcIceTcpDisable = !!this.service.options.webrtcIceTcpDisable;
+    this.webrtcIceUdpDisable = !!options.webrtcIceUdpDisable;
+    this.webrtcIceTcpDisable = !!options.webrtcIceTcpDisable;
     /**
      * Flag used to enforce ICE failure through the URL parameter for
      * the automatic testing purpose.
      * @type {boolean}
      */
-    this.failICE = !!this.service.options.failICE;
+    this.failICE = !!options.failICE;
 
     this.modificationQueue = async.queue(this._processQueueTasks.bind(this), 1);
 }
@@ -241,7 +253,7 @@ JingleSessionPC.prototype.sendIceCandidates = function (candidates) {
             for (var i = 0; i < cands.length; i++) {
                 var candidate = SDPUtil.candidateToJingle(cands[i].candidate);
                 // Mangle ICE candidate if 'failICE' test option is enabled
-                if (this.service.options.failICE) {
+                if (this.failICE) {
                     candidate.ip = "1.1.1.1";
                 }
                 cand.c('candidate', candidate).up();
