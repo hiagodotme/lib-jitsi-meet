@@ -9,6 +9,7 @@ import * as JitsiTrackErrors from "../../JitsiTrackErrors";
 var DataChannels = require("./DataChannels");
 var JitsiRemoteTrack = require("./JitsiRemoteTrack.js");
 var MediaType = require("../../service/RTC/MediaType");
+var TraceablePeerConnection = require("./TraceablePeerConnection");
 var VideoType = require("../../service/RTC/VideoType");
 var GlobalOnErrorHandler = require("../util/GlobalOnErrorHandler");
 import Listenable from "../util/Listenable";
@@ -191,6 +192,20 @@ export default class RTC extends Listenable {
 
     static getDeviceAvailability () {
         return RTCUtils.getDeviceAvailability();
+    }
+
+    /**
+     * Creates new <tt>TraceablePeerConnection</tt>
+     * @param iceConfig an object describing the ICE config like defined in
+     * the WebRTC specification.
+     * @param {Object} options the config options
+     * @param {boolean} options.disableSimulcast <tt>true</tt> to disable
+     * Simulcast.
+     * @return {TraceablePeerConnection}
+     */
+    createPeerConnection (iceConfig, options) {
+        return new TraceablePeerConnection(
+            this, iceConfig, RTC.getPCConstraints(), options);
     }
 
     addLocalTrack (track) {
