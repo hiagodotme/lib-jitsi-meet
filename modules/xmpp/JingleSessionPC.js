@@ -2,7 +2,7 @@
 
 import {getLogger} from "jitsi-meet-logger";
 const logger = getLogger(__filename);
-var JingleSession = require("./JingleSession");
+import JingleSession from "./JingleSession";
 var SDPDiffer = require("./SDPDiffer");
 var SDPUtil = require("./SDPUtil");
 var SDP = require("./SDP");
@@ -21,6 +21,8 @@ import * as JingleSessionState from "./JingleSessionState";
  */
 var IQ_TIMEOUT = 10000;
 
+export default class JingleSessionPC extends JingleSession {
+
 /**
  * FIXME fill docs
  * @param me
@@ -36,10 +38,9 @@ var IQ_TIMEOUT = 10000;
  *
  * @implements {SignallingLayer}
  */
-function JingleSessionPC(me, sid, peerjid, connection,
+constructor(me, sid, peerjid, connection,
                          media_constraints, ice_config, options) {
-    JingleSession.call(this, me, sid, peerjid, connection,
-                       media_constraints, ice_config);
+    super(me, sid, peerjid, connection, media_constraints, ice_config);
 
     this.lasticecandidate = false;
     this.closed = false;
@@ -84,10 +85,7 @@ function JingleSessionPC(me, sid, peerjid, connection,
     this.modificationQueue = async.queue(this._processQueueTasks.bind(this), 1);
 }
 
-JingleSessionPC.prototype = Object.create(JingleSession.prototype);
-JingleSessionPC.prototype.constructor = JingleSessionPC;
-
-JingleSessionPC.prototype.doInitialize = function () {
+doInitialize () {
     var self = this;
     this.lasticecandidate = false;
     // True if reconnect is in progress
@@ -187,9 +185,9 @@ JingleSessionPC.prototype.doInitialize = function () {
     this.peerconnection.onnegotiationneeded = function () {
         self.room.eventEmitter.emit(XMPPEvents.PEERCONNECTION_READY, self);
     };
-};
+}
 
-JingleSessionPC.prototype.sendIceCandidate = function (candidate) {
+sendIceCandidate (candidate) {
     var self = this;
     const localSDP = new SDP(this.peerconnection.localDescription.sdp);
     if (candidate && !this.lasticecandidate) {
@@ -221,9 +219,9 @@ JingleSessionPC.prototype.sendIceCandidate = function (candidate) {
         // FIXME: remember to re-think in ICE-restart
         this.lasticecandidate = true;
     }
-};
+}
 
-JingleSessionPC.prototype.sendIceCandidates = function (candidates) {
+sendIceCandidates (candidates) {
     logger.log('sendIceCandidates', candidates);
     var cand = $iq({to: this.peerjid, type: 'set'})
         .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
@@ -273,9 +271,9 @@ JingleSessionPC.prototype.sendIceCandidates = function (candidates) {
             GlobalOnErrorHandler.callErrorHandler(
                 new Error("Jingle error: " + JSON.stringify(error)));
         }), IQ_TIMEOUT);
-};
+}
 
-JingleSessionPC.prototype.readSsrcInfo = function (contents) {
+readSsrcInfo (contents) {
     var self = this;
     $(contents).each(function (idx, content) {
         var ssrcs = $(content).find('description>source[xmlns="urn:xmpp:jingle:apps:rtp:ssma:0"]');
@@ -292,7 +290,7 @@ JingleSessionPC.prototype.readSsrcInfo = function (contents) {
             );
         });
     });
-};
+}
 
 /**
  * Makes the underlying TraceablePeerConnection generate new SSRC for
@@ -318,8 +316,7 @@ JingleSessionPC.prototype.generateRecvonlySsrc = function() {
  *        the incoming offer. 'error' argument can be used to log some details
  *        about the error.
  */
-JingleSessionPC.prototype.acceptOffer = function(jingleOffer,
-                                                 success, failure) {
+acceptOffer (jingleOffer, success, failure) {
     this.state = JingleSessionState.ACTIVE;
     this.setOfferCycle(
         jingleOffer,
@@ -332,7 +329,7 @@ JingleSessionPC.prototype.acceptOffer = function(jingleOffer,
             this.sendSessionAccept(success, failure);
         },
         failure);
-};
+}
 
 /**
  * This is a setRemoteDescription/setLocalDescription cycle which starts at
@@ -344,9 +341,7 @@ JingleSessionPC.prototype.acceptOffer = function(jingleOffer,
  * @param failure callback called with an error object as an argument if we fail
  *        at any point during setRD, createAnswer, setLD.
  */
-JingleSessionPC.prototype.setOfferCycle = function (jingleOfferIq,
-                                                          success,
-                                                          failure) {
+setOfferCycle(jingleOfferIq, success, failure) {
     let workFunction = (finishedCallback) => {
         let newRemoteSdp = this._processNewJingleOfferIq(jingleOfferIq);
         this._renegotiate(newRemoteSdp)
@@ -368,7 +363,7 @@ JingleSessionPC.prototype.setOfferCycle = function (jingleOfferIq,
             }
         }
     );
-};
+}
 
 /**
  * Although it states "replace transport" it does accept full Jingle offer
@@ -378,9 +373,7 @@ JingleSessionPC.prototype.setOfferCycle = function (jingleOfferIq,
  * @param success callback called when we succeed to accept new offer.
  * @param failure function(error) called when we fail to accept new offer.
  */
-JingleSessionPC.prototype.replaceTransport = function (jingleOfferElem,
-                                                       success,
-                                                       failure) {
+replaceTransport (jingleOfferElem, success, failure) {
 
     // We need to first set an offer without the 'data' section to have the SCTP
     // stack cleaned up. After that the original offer is set to have the SCTP
@@ -404,17 +397,16 @@ JingleSessionPC.prototype.replaceTransport = function (jingleOfferElem,
         },
         failure
     );
-};
+}
 
 /**
  * Sends Jingle 'session-accept' message.
- * @param localSDP the 'SDP' object with local session description
  * @param {function()} success callback called when we recive 'RESULT' packet for
  *        'session-accept'
  * @param {function(error)} failure called when we receive an error response or
  *        when the request has timed out.
  */
-JingleSessionPC.prototype.sendSessionAccept = function (success, failure) {
+sendSessionAccept (success, failure) {
     // NOTE: since we're just reading from it, we don't need to be within
     //  the modification queue to access the local description
     let localSDP = new SDP(this.peerconnection.localDescription.sdp);
@@ -471,7 +463,7 @@ JingleSessionPC.prototype.sendSessionAccept = function (success, failure) {
     // immediate requests).
     //
     // this.connection.flush();
-};
+}
 
 /**
  * Sends Jingle 'transport-accept' message which is a response to
@@ -482,8 +474,7 @@ JingleSessionPC.prototype.sendSessionAccept = function (success, failure) {
  * @param failure function(error) called when we receive an error response or
  *        when the request has timed out.
  */
-JingleSessionPC.prototype.sendTransportAccept = function(localSDP, success,
-                                                         failure) {
+sendTransportAccept (localSDP, success, failure) {
     var self = this;
     var tAccept = $iq({to: this.peerjid, type: 'set'})
         .c('jingle', {xmlns: 'urn:xmpp:jingle:1',
@@ -510,7 +501,7 @@ JingleSessionPC.prototype.sendTransportAccept = function(localSDP, success,
         success,
         self.newJingleErrorHandler(tAccept, failure),
         IQ_TIMEOUT);
-};
+}
 
 /**
  * Sends Jingle 'transport-reject' message which is a response to
@@ -520,7 +511,7 @@ JingleSessionPC.prototype.sendTransportAccept = function(localSDP, success,
  * @param failure function(error) called when we receive an error response or
  *        when the request has timed out.
  */
-JingleSessionPC.prototype.sendTransportReject = function(success, failure) {
+sendTransportReject (success, failure) {
     // Send 'transport-reject', so that the focus will
     // know that we've failed
     var tReject = $iq({to: this.peerjid, type: 'set'})
@@ -536,13 +527,12 @@ JingleSessionPC.prototype.sendTransportReject = function(success, failure) {
         success,
         this.newJingleErrorHandler(tReject, failure),
         IQ_TIMEOUT);
-};
+}
 
 /**
  * @inheritDoc
  */
-JingleSessionPC.prototype.terminate = function (reason,  text,
-                                                success, failure) {
+terminate (reason,  text, success, failure) {
     this.state = JingleSessionState.ENDED;
 
     var term = $iq({to: this.peerjid,
@@ -567,10 +557,9 @@ JingleSessionPC.prototype.terminate = function (reason,  text,
 
     // this should result in 'onTerminated' being called by strope.jingle.js
     this.connection.jingle.terminate(this.sid);
-};
+}
 
-JingleSessionPC.prototype.onTerminated = function (reasonCondition,
-                                                   reasonText) {
+onTerminated (reasonCondition, reasonText) {
     this.state = 'ended';
 
     // Do something with reason and reasonCondition when we start to care
@@ -579,7 +568,7 @@ JingleSessionPC.prototype.onTerminated = function (reasonCondition,
     logger.info("Session terminated", this, reasonCondition, reasonText);
 
     this.close();
-};
+}
 
 /**
  * Parse the information from the xml sourceAddElem and translate it
@@ -591,7 +580,7 @@ JingleSessionPC.prototype.onTerminated = function (reasonCondition,
  * @returns {list} a list of SDP line strings that should
  *  be added to the remote SDP
  */
-JingleSessionPC.prototype._parseSsrcInfoFromSourceAdd = function (sourceAddElem, currentRemoteSdp) {
+_parseSsrcInfoFromSourceAdd (sourceAddElem, currentRemoteSdp) {
     let addSsrcInfo = [];
     $(sourceAddElem).each(function (idx, content) {
         var name = $(content).attr('name');
@@ -630,13 +619,13 @@ JingleSessionPC.prototype._parseSsrcInfoFromSourceAdd = function (sourceAddElem,
         });
     });
     return addSsrcInfo;
-};
+}
 
 /**
  * Handles a Jingle source-add message for this Jingle session.
  * @param elem An array of Jingle "content" elements.
  */
-JingleSessionPC.prototype.addRemoteStream = function (elem) {
+addRemoteStream (elem) {
     // FIXME: dirty waiting
     if (!this.peerconnection.localDescription) {
         logger.warn("addSource - localDescription not ready yet");
@@ -667,13 +656,13 @@ JingleSessionPC.prototype.addRemoteStream = function (elem) {
             });
     };
     this.modificationQueue.push(workFunction);
-};
+}
 
 /**
  * Handles a Jingle source-remove message for this Jingle session.
  * @param elem An array of Jingle "content" elements.
  */
-JingleSessionPC.prototype.removeRemoteStream = function (elem) {
+removeRemoteStream (elem) {
     // FIXME: dirty waiting
     if (!this.peerconnection.localDescription) {
         logger.warn("removeSource - localDescription not ready yet");
@@ -702,7 +691,7 @@ JingleSessionPC.prototype.removeRemoteStream = function (elem) {
             });
     };
     this.modificationQueue.push(workFunction);
-};
+}
 
 /**
  * The 'task' function will be given a callback it MUST call with either:
@@ -718,16 +707,16 @@ JingleSessionPC.prototype.removeRemoteStream = function (elem) {
  *     }
  * });
  */
-JingleSessionPC.prototype._processQueueTasks = function (task, finishedCallback) {
+_processQueueTasks (task, finishedCallback) {
     task(finishedCallback);
-};
+}
 
 /**
  * Takes in a jingle offer iq, returns the new sdp offer
  * @param {jquery xml element} offerIq the incoming offer
  * @returns {SDP object} the jingle offer translated to SDP
  */
-JingleSessionPC.prototype._processNewJingleOfferIq = function(offerIq) {
+_processNewJingleOfferIq (offerIq) {
     let remoteSdp = new SDP('');
     if (this.webrtcIceTcpDisable) {
         remoteSdp.removeTcpCandidates = true;
@@ -742,7 +731,7 @@ JingleSessionPC.prototype._processNewJingleOfferIq = function(offerIq) {
     remoteSdp.fromJingle(offerIq);
     this.readSsrcInfo($(offerIq).find(">content"));
     return remoteSdp;
-};
+}
 
 /**
  * Remove the given ssrc lines from the current remote sdp
@@ -751,7 +740,7 @@ JingleSessionPC.prototype._processNewJingleOfferIq = function(offerIq) {
  * @returns type {SDP Object} the new remote SDP (after removing the lines
  *  in removeSsrcInfo
  */
-JingleSessionPC.prototype._processRemoteRemoveSource = function (removeSsrcInfo) {
+_processRemoteRemoveSource (removeSsrcInfo) {
     let remoteSdp = new SDP(this.peerconnection.remoteDescription.sdp);
     removeSsrcInfo.forEach(function(lines, idx) {
         lines = lines.split('\r\n');
@@ -763,7 +752,7 @@ JingleSessionPC.prototype._processRemoteRemoveSource = function (removeSsrcInfo)
     remoteSdp.raw = remoteSdp.session + remoteSdp.media.join('');
 
     return remoteSdp;
-};
+}
 
 /**
  * Add the given ssrc lines to the current remote sdp
@@ -772,7 +761,7 @@ JingleSessionPC.prototype._processRemoteRemoveSource = function (removeSsrcInfo)
  * @returns type {SDP Object} the new remote SDP (after removing the lines
  *  in removeSsrcInfo
  */
-JingleSessionPC.prototype._processRemoteAddSource = function (addSsrcInfo) {
+_processRemoteAddSource (addSsrcInfo) {
     let remoteSdp = new SDP(this.peerconnection.remoteDescription.sdp);
     addSsrcInfo.forEach(function(lines, idx) {
         remoteSdp.media[idx] += lines;
@@ -780,7 +769,7 @@ JingleSessionPC.prototype._processRemoteAddSource = function (addSsrcInfo) {
     remoteSdp.raw = remoteSdp.session + remoteSdp.media.join('');
 
     return remoteSdp;
-};
+}
 
 /**
  * Do a new o/a flow using the existing remote description
@@ -791,7 +780,7 @@ JingleSessionPC.prototype._processRemoteAddSource = function (addSsrcInfo) {
  *  o/a flow is complete with no arguments or
  *  rejects with an error {string}
  */
-JingleSessionPC.prototype._renegotiate = function(optionalRemoteSdp) {
+_renegotiate (optionalRemoteSdp) {
     let media_constraints = this.media_constraints;
     let remoteSdp = optionalRemoteSdp || new SDP(this.peerconnection.remoteDescription.sdp);
     let remoteDescription = new RTCSessionDescription({
@@ -807,7 +796,7 @@ JingleSessionPC.prototype._renegotiate = function(optionalRemoteSdp) {
     //  logic below could listen to that and be separated from
     //  core flows like this.
     return new Promise((resolve, reject) => {
-        let remoteUfrag = getUfrag(remoteDescription.sdp);
+        let remoteUfrag = JingleSessionPC.getUfrag(remoteDescription.sdp);
         if (remoteUfrag != this.remoteUfrag) {
             this.remoteUfrag = remoteUfrag;
             this.room.eventEmitter.emit(
@@ -824,7 +813,7 @@ JingleSessionPC.prototype._renegotiate = function(optionalRemoteSdp) {
                 logger.debug("Renegotiate: creating answer");
                 this.peerconnection.createAnswer(
                     (answer) => {
-                        let localUfrag = getUfrag(answer.sdp);
+                        let localUfrag = JingleSessionPC.getUfrag(answer.sdp);
                         if (localUfrag != this.localUfrag) {
                             this.localUfrag = localUfrag;
                             this.room.eventEmitter.emit(
@@ -846,7 +835,7 @@ JingleSessionPC.prototype._renegotiate = function(optionalRemoteSdp) {
             }
         );
     });
-};
+}
 
 /**
  * Replaces oldStream with newStream and performs a single offer/answer
@@ -858,7 +847,7 @@ JingleSessionPC.prototype._renegotiate = function(optionalRemoteSdp) {
  * @returns {Promise} which resolves once the replacement is complete
  *  with no arguments or rejects with an error {string}
  */
-JingleSessionPC.prototype.replaceStream = function (oldStream, newStream) {
+replaceStream (oldStream, newStream) {
     return new Promise((resolve, reject) => {
         let workFunction = (finishedCallback) => {
             let oldSdp = new SDP(this.peerconnection.localDescription.sdp);
@@ -885,7 +874,7 @@ JingleSessionPC.prototype.replaceStream = function (oldStream, newStream) {
             }
         );
     });
-};
+}
 
 /**
  * Just add the stream to the peerconnection
@@ -894,12 +883,12 @@ JingleSessionPC.prototype.replaceStream = function (oldStream, newStream) {
  * NOTE: must be called within a work function being executed
  *  by the modification queue.
  */
-JingleSessionPC.prototype.addStreamToPeerConnection = function (stream, ssrcInfo) {
+addStreamToPeerConnection (stream, ssrcInfo) {
     let actualStream = stream && stream.getOriginalStream ? stream.getOriginalStream() : stream;
     if (this.peerconnection) {
         this.peerconnection.addStream(actualStream, ssrcInfo);
     }
-};
+}
 
 /**
  * Parse the information from the xml sourceRemoveElem and translate it
@@ -911,7 +900,7 @@ JingleSessionPC.prototype.addStreamToPeerConnection = function (stream, ssrcInfo
  * @returns {list} a list of SDP line strings that should
  *  be removed from the remote SDP
  */
-JingleSessionPC.prototype._parseSsrcInfoFromSourceRemove = function (sourceRemoveElem, currentRemoteSdp) {
+_parseSsrcInfoFromSourceRemove (sourceRemoveElem, currentRemoteSdp) {
     let removeSsrcInfo = [];
     $(sourceRemoveElem).each(function (idx, content) {
         var name = $(content).attr('name');
@@ -948,7 +937,7 @@ JingleSessionPC.prototype._parseSsrcInfoFromSourceRemove = function (sourceRemov
         });
     });
     return removeSsrcInfo;
-};
+}
 
 /**
  * Adds stream.
@@ -967,8 +956,7 @@ JingleSessionPC.prototype._parseSsrcInfoFromSourceRemove = function (sourceRemov
  *  logic should be moved into a helper function that could be called within
  *  the 'doReplaceStream' task or the 'doAddStream' task (for example)
  */
-JingleSessionPC.prototype.addStream = function (stream, callback, errorCallback,
-    ssrcInfo, dontModifySources) {
+addStream (stream, callback, errorCallback, ssrcInfo, dontModifySources) {
 
     let workFunction = (finishedCallback) => {
         if (!this.peerconnection) {
@@ -1008,22 +996,22 @@ JingleSessionPC.prototype.addStream = function (stream, callback, errorCallback,
             }
         }
     );
-};
+}
 
 /**
  * Generate ssrc info object for a stream with the following properties:
  * - ssrcs - Array of the ssrcs associated with the stream.
  * - groups - Array of the groups associated with the stream.
  */
-JingleSessionPC.prototype.generateNewStreamSSRCInfo = function () {
+generateNewStreamSSRCInfo () {
     return this.peerconnection.generateNewStreamSSRCInfo();
-};
+}
 
 /**
  * Remove stream handling for firefox
  * @param stream: webrtc media stream
  */
-JingleSessionPC.prototype._handleFirefoxRemoveStream = function (stream) {
+_handleFirefoxRemoveStream (stream) {
     if (!stream) { //There is nothing to be changed
         return;
     }
@@ -1058,7 +1046,7 @@ JingleSessionPC.prototype._handleFirefoxRemoveStream = function (stream) {
     } else {
         logger.log("Cannot remove tracks: no RTPSender.");
     }
-};
+}
 
 /**
  * Just remove the stream from the peerconnection
@@ -1066,7 +1054,7 @@ JingleSessionPC.prototype._handleFirefoxRemoveStream = function (stream) {
  * NOTE: must be called within a work function being executed
  *  by the modification queue.
  */
-JingleSessionPC.prototype.removeStreamFromPeerConnection = function (stream) {
+removeStreamFromPeerConnection (stream) {
     let actualStream
         = stream && stream.getOriginalStream
             ? stream.getOriginalStream() : stream;
@@ -1079,7 +1067,7 @@ JingleSessionPC.prototype.removeStreamFromPeerConnection = function (stream) {
     } else if (actualStream) {
         this.peerconnection.removeStream(actualStream);
     }
-};
+}
 
 /**
  * Remove streams.
@@ -1089,8 +1077,7 @@ JingleSessionPC.prototype.removeStreamFromPeerConnection = function (stream) {
  * @param ssrcInfo object with information about the SSRCs associated with the
  * stream.
  */
-JingleSessionPC.prototype.removeStream = function (stream, callback, errorCallback,
-    ssrcInfo) {
+removeStream (stream, callback, errorCallback, ssrcInfo) {
     let workFunction = (finishedCallback) => {
         if (!this.peerconnection) {
             finishedCallback();
@@ -1128,14 +1115,14 @@ JingleSessionPC.prototype.removeStream = function (stream, callback, errorCallba
             }
         }
     );
-};
+}
 
 /**
  * Figures out added/removed ssrcs and send update IQs.
  * @param old_sdp SDP object for old description.
  * @param new_sdp SDP object for new description.
  */
-JingleSessionPC.prototype.notifyMySSRCUpdate = function (old_sdp, new_sdp) {
+notifyMySSRCUpdate (old_sdp, new_sdp) {
 
     if (this.state !== JingleSessionState.ACTIVE){
         logger.warn(
@@ -1191,7 +1178,7 @@ JingleSessionPC.prototype.notifyMySSRCUpdate = function (old_sdp, new_sdp) {
     } else {
         logger.log('addition not necessary');
     }
-};
+}
 
 /**
  * Method returns function(errorResponse) which is a callback to be passed to
@@ -1211,7 +1198,7 @@ JingleSessionPC.prototype.notifyMySSRCUpdate = function (old_sdp, new_sdp) {
  *        when a timeout has occurred.
  * @returns {function(this:JingleSessionPC)}
  */
-JingleSessionPC.prototype.newJingleErrorHandler = function(request, failureCb) {
+newJingleErrorHandler (request, failureCb) {
     return function (errResponse) {
 
         var error = { };
@@ -1244,42 +1231,42 @@ JingleSessionPC.prototype.newJingleErrorHandler = function(request, failureCb) {
             failureCb(error);
         }
     }.bind(this);
-};
+}
 
-JingleSessionPC.onJingleFatalError = function (session, error)
+static onJingleFatalError (session, error)
 {
     if (this.room) {
         this.room.eventEmitter.emit(XMPPEvents.CONFERENCE_SETUP_FAILED, error);
         this.room.eventEmitter.emit(XMPPEvents.JINGLE_FATAL_ERROR, session, error);
     }
-};
+}
 
 /**
  * @inheritDoc
  */
-JingleSessionPC.prototype.getPeerMediaInfo  = function (owner, mediaType) {
+getPeerMediaInfo (owner, mediaType) {
     return this.room.getMediaPresenceInfo(owner, mediaType);
-};
+}
 
 /**
  * @inheritDoc
  */
-JingleSessionPC.prototype.getSSRCOwner = function(ssrc) {
+getSSRCOwner (ssrc) {
     return this.ssrcOwners[ssrc];
-};
+}
 
 /**
  * Returns the ice connection state for the peer connection.
  * @returns the ice connection state for the peer connection.
  */
-JingleSessionPC.prototype.getIceConnectionState = function () {
+getIceConnectionState () {
     return this.peerconnection.iceConnectionState;
-};
+}
 
 /**
  * Closes the peerconnection.
  */
-JingleSessionPC.prototype.close = function () {
+close () {
     this.closed = true;
     // do not try to close if already closed.
     this.peerconnection
@@ -1288,7 +1275,7 @@ JingleSessionPC.prototype.close = function () {
             || (this.peerconnection.connectionState
                 && this.peerconnection.connectionState !== 'closed'))
         && this.peerconnection.close();
-};
+}
 
 
 /**
@@ -1297,7 +1284,7 @@ JingleSessionPC.prototype.close = function () {
  * @param jingle the jingle packet that is going to be sent
  * @returns {boolean} true if the jingle has to be sent and false otherwise.
  */
-JingleSessionPC.prototype.fixJingle = function(jingle) {
+fixJingle (jingle) {
     var action = $(jingle.nodeTree).find("jingle").attr("action");
     switch (action) {
         case "source-add":
@@ -1316,7 +1303,7 @@ JingleSessionPC.prototype.fixJingle = function(jingle) {
 
     var sources = $(jingle.tree()).find(">jingle>content>description>source");
     return sources && sources.length > 0;
-};
+}
 
 /**
  * Fixes the outgoing jingle packets with action source-add by removing the
@@ -1324,7 +1311,7 @@ JingleSessionPC.prototype.fixJingle = function(jingle) {
  * @param jingle the jingle packet that is going to be sent
  * @returns {boolean} true if the jingle has to be sent and false otherwise.
  */
-JingleSessionPC.prototype.fixSourceAddJingle = function (jingle) {
+fixSourceAddJingle (jingle) {
     var ssrcs = this.modifiedSSRCs["unmute"];
     this.modifiedSSRCs["unmute"] = [];
     if(ssrcs && ssrcs.length) {
@@ -1352,7 +1339,8 @@ JingleSessionPC.prototype.fixSourceAddJingle = function (jingle) {
     this.modifiedSSRCs["addMuted"] = [];
     if(ssrcs && ssrcs.length) {
         ssrcs.forEach(function (ssrcObj) {
-            var desc = createDescriptionNode(jingle, ssrcObj.mtype);
+            var desc
+                = JingleSessionPC.createDescriptionNode(jingle, ssrcObj.mtype);
             var cname = Math.random().toString(36).substring(2);
             ssrcObj.ssrc.ssrcs.forEach(function (ssrc) {
                 var sourceNode = desc.find(">source[ssrc=\"" +ssrc + "\"]");
@@ -1379,7 +1367,7 @@ JingleSessionPC.prototype.fixSourceAddJingle = function (jingle) {
             });
         });
     }
-};
+}
 
 /**
  * Fixes the outgoing jingle packets with action source-remove by removing the
@@ -1387,7 +1375,7 @@ JingleSessionPC.prototype.fixSourceAddJingle = function (jingle) {
  * @param jingle the jingle packet that is going to be sent
  * @returns {boolean} true if the jingle has to be sent and false otherwise.
  */
-JingleSessionPC.prototype.fixSourceRemoveJingle = function(jingle) {
+fixSourceRemoveJingle (jingle) {
     var ssrcs = this.modifiedSSRCs["mute"];
     this.modifiedSSRCs["mute"] = [];
     if(ssrcs && ssrcs.length)
@@ -1411,7 +1399,8 @@ JingleSessionPC.prototype.fixSourceRemoveJingle = function(jingle) {
     this.modifiedSSRCs["remove"] = [];
     if(ssrcs && ssrcs.length)
         ssrcs.forEach(function (ssrcObj) {
-            var desc = createDescriptionNode(jingle, ssrcObj.mtype);
+            var desc
+                = JingleSessionPC.createDescriptionNode(jingle, ssrcObj.mtype);
             ssrcObj.ssrc.ssrcs.forEach(function (ssrc) {
                 var sourceNode = desc.find(">source[ssrc=\"" +ssrc + "\"]");
                 if(!sourceNode || !sourceNode.length) {
@@ -1434,7 +1423,7 @@ JingleSessionPC.prototype.fixSourceRemoveJingle = function(jingle) {
                 }
             });
         });
-};
+}
 
 /**
  * Returns the description node related to the passed content type. If the node
@@ -1442,7 +1431,7 @@ JingleSessionPC.prototype.fixSourceRemoveJingle = function(jingle) {
  * @param jingle - the jingle packet
  * @param mtype - the content type(audio, video, etc.)
  */
-function createDescriptionNode(jingle, mtype) {
+static createDescriptionNode(jingle, mtype) {
     var content = $(jingle.tree()).find(">jingle>content[name=\"" +
         mtype + "\"]");
 
@@ -1466,7 +1455,7 @@ function createDescriptionNode(jingle, mtype) {
 /**
  * Extracts the ice username fragment from an SDP string.
  */
-function getUfrag(sdp) {
+static getUfrag(sdp) {
     var ufragLines = sdp.split('\n').filter(function(line) {
         return line.startsWith("a=ice-ufrag:");});
     if (ufragLines.length > 0) {
@@ -1474,4 +1463,4 @@ function getUfrag(sdp) {
     }
 }
 
-module.exports = JingleSessionPC;
+}
