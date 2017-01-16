@@ -1,4 +1,4 @@
-/* global $, $iq, Strophe */
+/* global __filename, $, $iq, Strophe */
 
 import {getLogger} from "jitsi-meet-logger";
 const logger = getLogger(__filename);
@@ -6,6 +6,7 @@ import JingleSession from "./JingleSession";
 const SDPDiffer = require("./SDPDiffer");
 const SDPUtil = require("./SDPUtil");
 const SDP = require("./SDP");
+import SignallingLayerImpl from "./SignallingLayerImpl";
 const async = require("async");
 const XMPPEvents = require("../../service/xmpp/XMPPEvents");
 const RTCBrowserType = require("../RTC/RTCBrowserType");
@@ -64,14 +65,10 @@ export default class JingleSessionPC extends JingleSession {
         this.remoteUfrag = null;
 
         /**
-         * A map that stores SSRCs of remote streams. And is used only locally
-         * We store the mapping when jingle is received, and later is used
-         * onaddstream webrtc event where we have only the ssrc
-         * FIXME: This map got filled and never cleaned and can grow durring long
-         * conference
-         * @type {{}} maps SSRC number to jid
+         * The signalling layer implementation.
+         * @type {SignallingLayerImpl}
          */
-        this.ssrcOwners = {};
+        this.signallingLayer = new SignallingLayerImpl();
 
         this.webrtcIceUdpDisable = !!options.webrtcIceUdpDisable;
         this.webrtcIceTcpDisable = !!options.webrtcIceTcpDisable;
@@ -95,7 +92,8 @@ export default class JingleSessionPC extends JingleSession {
         // Create new peer connection instance
         this.peerconnection
             = this.rtc.createPeerConnection(
-                this, this.connection.jingle.ice_config, this.room.options);
+                this.signallingLayer,
+                this.connection.jingle.ice_config, this.room.options);
 
         this.peerconnection.onicecandidate = function (ev) {
             if (!ev) {
@@ -190,6 +188,8 @@ export default class JingleSessionPC extends JingleSession {
         this.peerconnection.onnegotiationneeded = function () {
             self.room.eventEmitter.emit(XMPPEvents.PEERCONNECTION_READY, self);
         };
+        // The signalling layer will bind it's listeners at this point
+        this.signallingLayer.setChatRoom(this.room);
     }
 
     sendIceCandidate (candidate) {
@@ -301,8 +301,8 @@ export default class JingleSessionPC extends JingleSession {
                     function () {
                         const owner = this.getAttribute('owner');
                         if (owner && owner.length) {
-                            self.ssrcOwners[ssrc]
-                                = Strophe.getResourceFromJid(owner);
+                            self.signallingLayer.setSSRCOwner(
+                                ssrc, Strophe.getResourceFromJid(owner));
                         }
                     }
                 );
@@ -1295,20 +1295,6 @@ export default class JingleSessionPC extends JingleSession {
     }
 
     /**
-     * @inheritDoc
-     */
-    getPeerMediaInfo (owner, mediaType) {
-        return this.room.getMediaPresenceInfo(owner, mediaType);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    getSSRCOwner (ssrc) {
-        return this.ssrcOwners[ssrc];
-    }
-
-    /**
      * Returns the ice connection state for the peer connection.
      * @returns the ice connection state for the peer connection.
      */
@@ -1321,6 +1307,8 @@ export default class JingleSessionPC extends JingleSession {
      */
     close () {
         this.closed = true;
+        // The signalling layer will remove it's listeners
+        this.signallingLayer.setChatRoom(null);
         // do not try to close if already closed.
         this.peerconnection
             && ((this.peerconnection.signalingState
