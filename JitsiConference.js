@@ -1052,7 +1052,7 @@ function (jingleSession, jingleOffer, now) {
                 type: "addMuted",
                 ssrcs: localTrack.ssrc.ssrcs,
                 groups: localTrack.ssrc.groups,
-                msid: localTrack.initialMSID
+                msid: localTrack.storedMSID
             };
         }
         try {
