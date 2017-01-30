@@ -10,6 +10,10 @@ var minimize
 var plugins = [];
 
 if (minimize) {
+    plugins.push(new webpack.LoaderOptionsPlugin({
+        minimize: true
+    }));
+
     // While webpack will automatically insert UglifyJsPlugin when minimize is
     // true, the defaults of UglifyJsPlugin in webpack 1 and webpack 2 are
     // different. Explicitly state what we want even if we want defaults in
@@ -34,7 +38,7 @@ module.exports = {
         'lib-jitsi-meet': './JitsiMeetJS.js'
     },
     module: {
-        loaders: [ {
+        rules: [ {
             // Version this build of the lib-jitsi-meet library.
 
             loader: 'string-replace-loader',
@@ -64,7 +68,13 @@ module.exports = {
             loader: 'babel-loader',
             query: {
                 presets: [
-                    'es2015'
+                    [
+                        'es2015',
+
+                        // Tell babel to avoid compiling imports into CommonJS
+                        // so that webpack may do tree shaking.
+                        { modules: false }
+                    ]
                 ]
             },
             test: /\.js$/
