@@ -49,6 +49,7 @@ function JitsiLocalTrack(rtcId, stream, track, mediaType, videoType, resolution,
     this.startMuted = false;
     this.storedMSID = this.getMSID();
     this.inMuteOrUnmuteProgress = false;
+    this.peerConnections = [];
 
     /**
      * The facing mode of the camera from which this JitsiLocalTrack instance
@@ -127,6 +128,33 @@ function JitsiLocalTrack(rtcId, stream, track, mediaType, videoType, resolution,
 
 JitsiLocalTrack.prototype = Object.create(JitsiTrack.prototype);
 JitsiLocalTrack.prototype.constructor = JitsiLocalTrack;
+
+JitsiLocalTrack.prototype._addPeerConnection = function(tpc) {
+    if (!this._isAttachedToPC(tpc)) {
+        this.peerConnections.push(tpc);
+    } else {
+        logger.error(
+            "PeerConnection[" + tpc.id
+                + " is associated with the local track already["
+                + this.rtcId + "]");
+    }
+};
+
+JitsiLocalTrack.prototype._removePeerConnection = function (tpc) {
+    if (this._isAttachedToPC(tpc)) {
+        this.peerConnections.splice(
+            this.peerConnections.indexOf(tpc), 1);
+    } else {
+        logger.error(
+            "PeerConnection[" + tpc.id
+                + " is not associated with this local track["
+                + this.rtcId + "]");
+    }
+};
+
+JitsiLocalTrack.prototype._isAttachedToPC = function (tpc) {
+    return this.peerConnections.indexOf(tpc) !== -1;
+};
 
 /**
  * Returns if associated MediaStreamTrack is in the 'ended' state

@@ -935,6 +935,7 @@ TraceablePeerConnection.prototype.addStream = function (stream) {
     }
 
     this.localTracks[rtcId] = stream;
+    stream._addPeerConnection(this);
 
     const webrtcStream = stream.getOriginalStream();
     if (webrtcStream)
@@ -970,7 +971,52 @@ TraceablePeerConnection.prototype.addStream = function (stream) {
 };
 
 TraceablePeerConnection.prototype.addStreamUnmute = function (stream) {
+
+    if (!this._assertTrackBelongs("addStreamUnmute", stream)) {
+        // Abort
+        return;
+    }
+
     this.peerconnection.addStream(stream.getOriginalStream());
+};
+
+TraceablePeerConnection.prototype._assertTrackBelongs
+= function (methodName, localTrack) {
+    const doesBelong = !!this.localTracks[localTrack.rtcId];
+    if (!doesBelong) {
+        logger.error(
+            methodName + ":local track[" + localTrack.rtcId
+                + "] does not belong to this TPC[" + this.id + "]!");
+    }
+    return doesBelong;
+};
+
+TraceablePeerConnection.prototype.isTrackAttached = function (localTrack) {
+    return localTrack._isAttachedToPC(this);
+};
+
+TraceablePeerConnection.prototype.detachTrack = function (localTrack) {
+
+    if (!this._assertTrackBelongs("detachTrack", localTrack)) {
+        // Abort
+        return;
+    }
+
+    localTrack._removePeerConnection(this);
+
+    this.removeStreamMute(localTrack);
+};
+
+TraceablePeerConnection.prototype.attachTrack = function (localTrack) {
+
+    if (!this._assertTrackBelongs("attachTrack", localTrack)) {
+        // Abort
+        return;
+    }
+
+    localTrack._addPeerConnection(this);
+
+    this.addStreamUnmute(localTrack);
 };
 
 /**
@@ -983,14 +1029,16 @@ TraceablePeerConnection.prototype.removeStream = function (localTrack) {
         'removeStream',
         localTrack.rtcId, webRtcStream ? webRtcStream.id : undefined);
 
-    if (!this.localTracks[localTrack.rtcId]) {
-        logger.error(
-            "Local track[" + localTrack.rtcId
-                + "] does not belong to this TPC[" + this.id + "]!");
+    if (!this._assertTrackBelongs("removeStream", localTrack)) {
+        // Abort - nothing to be done here
         return;
     }
     delete this.localTracks[localTrack.rtcId];
     delete this.localSSRCs[localTrack.rtcId];
+    // A detached track will not require removal
+    if (this.isTrackAttached(localTrack)) {
+        localTrack._removePeerConnection(this);
+    }
 
     if (webRtcStream) {
         if (RTCBrowserType.getBrowserType()
@@ -1010,11 +1058,8 @@ TraceablePeerConnection.prototype.removeStreamMute = function (localTrack) {
     const webRtcStream = localTrack.getOriginalStream();
     this.trace('removeStreamMute', localTrack.rtcId, webRtcStream.id);
 
-    // FIXME duplicated
-    if (!this.localTracks[localTrack.rtcId]) {
-        logger.error(
-            "Local track[" + localTrack.rtcId
-            + "] does not belong to this TPC[" + this.id + "]!");
+    if (!this._assertTrackBelongs("removeStreamMute", localTrack)) {
+        // Abort - nothing to be done here
         return;
     }
 
