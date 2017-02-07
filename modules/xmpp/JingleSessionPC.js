@@ -1348,16 +1348,6 @@ export default class JingleSessionPC extends JingleSession {
             && this.peerconnection.close();
     }
 
-
-    /**
-     * FIXME docs
-     */
-    static containsSSRCs (jingle) {
-        const sources
-            = $(jingle.tree()).find(">jingle>content>description>source");
-        return sources && sources.length > 0;
-    }
-
     /**
      * Extracts the ice username fragment from an SDP string.
      */
