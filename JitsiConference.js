@@ -549,7 +549,7 @@ JitsiConference.prototype.replaceTrack = function (oldTrack, newTrack) {
  * currently no JingleSession started.
  * @param {JitsiLocalTrack|null} oldTrack the track to be removed during
  * the process or <tt>null</t> if the method should act as "add track"
- * @param {JitsiLocalTrackn|null} newTrack the new track to be added or
+ * @param {JitsiLocalTrack|null} newTrack the new track to be added or
  * <tt>null</tt> if the method should act as "remove track"
  * @return {Promise}
  * @private
