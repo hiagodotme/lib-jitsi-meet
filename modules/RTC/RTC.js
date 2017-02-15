@@ -212,14 +212,17 @@ export default class RTC extends Listenable {
      * @param {Object} options the config options
      * @param {boolean} options.disableSimulcast <tt>true</tt> to disable
      * Simulcast.
+     * @param {boolean} options.disableRtx <tt>true</tt> to disable RTX
+     * @param {boolean} isP2P indicates whether or not the new TPC will be used
+     * in a peer to peer type of session
      * @return {TraceablePeerConnection}
      */
-    createPeerConnection (signalling, iceConfig, options) {
+    createPeerConnection (signalling, iceConfig, options, isP2P) {
         const newConnection
             = new TraceablePeerConnection(
                 this,
                 this.peerConnIdCounter,
-                signalling, iceConfig, RTC.getPCConstraints(), options);
+                signalling, iceConfig, RTC.getPCConstraints(), options, isP2P);
 
         this.peerConnections[newConnection.id] = newConnection;
         this.peerConnIdCounter += 1;
