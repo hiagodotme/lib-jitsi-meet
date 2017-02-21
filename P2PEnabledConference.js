@@ -33,6 +33,12 @@ export default class P2PEnabledConference extends JitsiConference {
     constructor(options) {
         // Call super
         super(options);
+        // Original this.eventEmitter.emit method, stored to skip the event
+        // filtering logic
+        this._originalEmit = this.eventEmitter.emit.bind(this.eventEmitter);
+        // Intercepts original event emitter calls to filter out some of
+        // the conference events
+        this.eventEmitter.emit = this._emitIntercept.bind(this);
         /**
          * Stores reference to deferred start P2P task. It's created when 3rd
          * participant leaves the room in order to avoid ping pong effect (it
@@ -50,6 +56,13 @@ export default class P2PEnabledConference extends JitsiConference {
         this.backToP2PDelay = isNaN(delay) ? 5 : delay;
         logger.info("backToP2PDelay: " + this.backToP2PDelay);
 
+        /**
+         * If set to <tt>true</tt> it means the P2P ICE is no longer connected.
+         * When <tt>false</tt> it means that P2P ICE (media) connection is up
+         * and running.
+         * @type {boolean}
+         */
+        this.isP2PConnectionInterrupted = false;
         /**
          * Flag set to <tt>true</tt> when P2P session has been established
          * (ICE has been connected).
@@ -206,6 +219,25 @@ export default class P2PEnabledConference extends JitsiConference {
     }
 
     /**
+     * Intercepts events emitted by parent <tt>JitsiConference</tt>
+     * @private
+     */
+    _emitIntercept(eventType) {
+        const shouldBlock = this._shouldBlockEvent(eventType);
+        switch (eventType) {
+            // Log events which may be of interest for the P2P implementation
+            case JitsiConferenceEvents.CONNECTION_INTERRUPTED:
+            case JitsiConferenceEvents.CONNECTION_RESTORED:
+            case JitsiConferenceEvents.P2P_STATUS:
+                logger.debug(
+                    "_emitIntercept: block? " + shouldBlock, arguments);
+                break;
+        }
+        if (!shouldBlock)
+            this._originalEmit.apply(this.eventEmitter, arguments);
+    }
+
+    /**
      * @inheritDoc
      * @override
      * @private
@@ -234,10 +266,8 @@ export default class P2PEnabledConference extends JitsiConference {
             logger.error("CONNECTION_ESTABLISHED - not P2P session ?!");
             return;
         }
-        logger.info("Peer to peer connection established!");
-        this.p2pEstablished = true;
-        this.eventEmitter.emit(
-            JitsiConferenceEvents.P2P_STATUS, this, this.p2pEstablished);
+        // Update P2P status and emit events
+        this._setNewP2PStatus(true);
 
         // Remove remote tracks
         this._removeRemoteJVBTracks();
@@ -322,6 +352,48 @@ export default class P2PEnabledConference extends JitsiConference {
             all.push(this.peerToPeerSession.removeTrackAsMute(track));
         }
         return Promise.all(all);
+    }
+
+    /**
+     * Sets new P2P status and updates some events/states hijacked from
+     * the <tt>JitsiConference</tt>.
+     * @param {boolean} newStatus the new P2P status value, <tt>true</tt> means
+     * that P2P is now in use, <tt>false</tt> means that the JVB connection is
+     * now in use.
+     * @private
+     */
+    _setNewP2PStatus (newStatus) {
+        this.p2pEstablished = newStatus;
+        if (newStatus) {
+            logger.info("Peer to peer connection established!");
+        } else {
+            logger.info("Peer to peer connection closed!");
+        }
+        // Update P2P status
+        this.eventEmitter.emit(
+            JitsiConferenceEvents.P2P_STATUS, this, this.p2pEstablished);
+        // Refresh connection interrupted/restored
+        this._originalEmit(
+            this.isConnectionInterrupted()
+                ? JitsiConferenceEvents.CONNECTION_INTERRUPTED
+                : JitsiConferenceEvents.CONNECTION_RESTORED);
+    }
+
+    /**
+     * Checks whether or not given event coming from
+     * the <tt>JitsiConference</tt> should be blocked or not.
+     * @param {string} eventType the event type name
+     * @return {boolean} <tt>true</tt> to block or <tt>false</tt> to let through
+     * @private
+     */
+    _shouldBlockEvent (eventType) {
+        switch (eventType) {
+            case JitsiConferenceEvents.CONNECTION_INTERRUPTED:
+            case JitsiConferenceEvents.CONNECTION_RESTORED:
+                return this.p2pEstablished;
+            default:
+                return false;
+        }
     }
 
     /**
@@ -482,13 +554,10 @@ export default class P2PEnabledConference extends JitsiConference {
                 });
         }
         this.peerToPeerSession = null;
-        this.p2pEstablished = false;
         // Clear fake room state
         this.peerToPeerFakeRoom = null;
-
-        // Update P2P status
-        this.eventEmitter.emit(
-            JitsiConferenceEvents.P2P_STATUS, this, this.p2pEstablished);
+        // Update P2P status and other affected events/states
+        this._setNewP2PStatus(false);
 
         // Add JVB remote tracks
         this._addRemoteJVBTracks();
@@ -498,6 +567,17 @@ export default class P2PEnabledConference extends JitsiConference {
         if (this.jingleSession) {
             this._ensureRemoteStatsRunning();
         }
+    }
+
+    /**
+     * Tells whether or not the media connection has been interrupted based on
+     * the current P2P vs JVB status.
+     * @inheritDoc
+     * @override
+     */
+    isConnectionInterrupted () {
+        return this.p2pEstablished
+            ? this.isP2PConnectionInterrupted : super.isConnectionInterrupted();
     }
 
     /**
@@ -630,6 +710,26 @@ export default class P2PEnabledConference extends JitsiConference {
     }
 
     /**
+     * Called when {@link XMPPEvents.CONNECTION_INTERRUPTED} occurs on the P2P
+     * connection.
+     */
+    onP2PIceConnectionInterrupted () {
+        this.isP2PConnectionInterrupted = true;
+        if (this.p2pEstablished)
+            this._originalEmit(JitsiConferenceEvents.CONNECTION_INTERRUPTED);
+    }
+
+    /**
+     * Called when {@link XMPPEvents.CONNECTION_RESTORED} occurs on the P2P
+     * connection.
+     */
+    onP2PIceConnectionRestored () {
+        this.isP2PConnectionInterrupted = false;
+        if (this.p2pEstablished)
+            this._originalEmit(JitsiConferenceEvents.CONNECTION_RESTORED);
+    }
+
+    /**
      * @inheritDoc
      * @override
      */
@@ -732,6 +832,10 @@ class FakeChatRoomLayer {
                 logger.debug("Fake emit: ", type, arguments);
                 if (type === XMPPEvents.CONNECTION_ESTABLISHED) {
                     self.p2pConf._onP2PConnectionEstablished(arguments[1]);
+                } else if (type === XMPPEvents.CONNECTION_INTERRUPTED) {
+                    self.p2pConf.onP2PIceConnectionInterrupted();
+                } else if (type === XMPPEvents.CONNECTION_RESTORED) {
+                    self.p2pConf.onP2PIceConnectionRestored();
                 }
             }
         };
