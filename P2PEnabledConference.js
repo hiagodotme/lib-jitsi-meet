@@ -536,8 +536,13 @@ export default class P2PEnabledConference extends JitsiConference {
         // Add local track to JVB
         this._addLocalTracksToJVB();
 
-        // Remove remote P2P tracks
-        this._removeP2PRemoteTracks();
+        // Swap remote tracks, but only if the P2P has been fully established
+        if (this.p2pEstablished) {
+            // Remove remote P2P tracks
+            this._removeP2PRemoteTracks();
+            // Add back remote JVB tracks
+            this._addRemoteJVBTracks();
+        }
 
         // Stop P2P stats
         logger.info("Stopping remote stats with P2P connection");
@@ -553,14 +558,12 @@ export default class P2PEnabledConference extends JitsiConference {
                         + " P2P Jingle session", error);
                 });
         }
+
         this.peerToPeerSession = null;
         // Clear fake room state
         this.peerToPeerFakeRoom = null;
         // Update P2P status and other affected events/states
         this._setNewP2PStatus(false);
-
-        // Add JVB remote tracks
-        this._addRemoteJVBTracks();
 
         // Start remote stats
         logger.info("Starting remote stats with JVB connection");
@@ -830,12 +833,19 @@ class FakeChatRoomLayer {
         return {
             emit: function (type) {
                 logger.debug("Fake emit: ", type, arguments);
-                if (type === XMPPEvents.CONNECTION_ESTABLISHED) {
-                    self.p2pConf._onP2PConnectionEstablished(arguments[1]);
-                } else if (type === XMPPEvents.CONNECTION_INTERRUPTED) {
-                    self.p2pConf.onP2PIceConnectionInterrupted();
-                } else if (type === XMPPEvents.CONNECTION_RESTORED) {
-                    self.p2pConf.onP2PIceConnectionRestored();
+                switch (type) {
+                    case XMPPEvents.CONNECTION_ESTABLISHED:
+                        self.p2pConf._onP2PConnectionEstablished(arguments[1]);
+                        break;
+                    case XMPPEvents.CONNECTION_INTERRUPTED:
+                        self.p2pConf.onP2PIceConnectionInterrupted();
+                        break;
+                    case XMPPEvents.CONNECTION_RESTORED:
+                        self.p2pConf.onP2PIceConnectionRestored();
+                        break;
+                    case XMPPEvents.CONNECTION_ICE_FAILED:
+                        self.p2pConf._stopPeer2PeerSession();
+                        break;
                 }
             }
         };
