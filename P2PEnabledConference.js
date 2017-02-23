@@ -233,8 +233,9 @@ export default class P2PEnabledConference extends JitsiConference {
                     "_emitIntercept: block? " + shouldBlock, arguments);
                 break;
         }
-        if (!shouldBlock)
+        if (!shouldBlock) {
             this._originalEmit.apply(this.eventEmitter, arguments);
+        }
     }
 
     /**
