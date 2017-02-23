@@ -29,6 +29,12 @@ export default class P2PEnabledConference extends JitsiConference {
      * @param {number} [options.config.backToP2PDelay=5] a delay given in
      * seconds, before the conference switches back to P2P after the 3rd
      * participant has left.
+     * @param {boolean} [options.config.disableAutoP2P] option used in automatic
+     * testing. When set to <tt>true</tt> the method
+     * {@link _startPeer2PeerSession} will be blocked which means that no
+     * automatic switching between P2P and JVB connections will happen. In such
+     * case public methods {@link startPeer2PeerSession} and
+     * {@link stopPeer2PeerSession} have to be called explicitly.
      */
     constructor(options) {
         super(options);
