@@ -140,7 +140,7 @@ export default class P2PEnabledConference extends JitsiConference {
      * Attaches local tracks back to the JVB connection.
      * @private
      */
-    _addLocalTracksToJVB() {
+    _attachLocalTracksToJvbSession() {
         const localTracks = this.getLocalTracks();
 
         logger.info("Attaching " + localTracks + " to JVB");
@@ -261,7 +261,7 @@ export default class P2PEnabledConference extends JitsiConference {
         // Remove local tracks from JVB PC
         // But only if it has started
         if (this.jvbJingleSession) {
-            this._removeLocalTracksFromJVB();
+            this._detachLocalTracksFromJvbSession();
         }
 
         // Start remote stats
@@ -273,7 +273,7 @@ export default class P2PEnabledConference extends JitsiConference {
      * Detaches local tracks from the JVB connection.
      * @private
      */
-    _removeLocalTracksFromJVB() {
+    _detachLocalTracksFromJvbSession() {
         const localTracks = this.getLocalTracks();
         logger.info("Detaching local tracks from JVB: " + localTracks);
         this.jvbJingleSession.detachLocalTracks(localTracks)
@@ -530,7 +530,7 @@ export default class P2PEnabledConference extends JitsiConference {
         }
 
         // Add local track to JVB
-        this._addLocalTracksToJVB();
+        this._attachLocalTracksToJvbSession();
 
         // Swap remote tracks, but only if the P2P has been fully established
         if (this.p2pEstablished) {
