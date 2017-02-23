@@ -657,14 +657,6 @@ export default class P2PEnabledConference extends JitsiConference {
      * @override
      */
     onIncomingCall (jingleSession, jingleOffer, now) {
-        if (typeof  jingleSession.isP2P === 'undefined') {
-            // FIXME isFocus seems to be unreliable ? See fix note in ChatRoom
-            jingleSession.isP2P = !this.room.isFocus(jingleSession.peerjid);
-            // It is important to print that, as long as isFocus is unreliable.
-            logger.info(
-                "Marking session from " + jingleSession.peerjid
-                + (jingleSession.isP2P ? " as P2P" : " as *not* P2P"));
-        }
         if (jingleSession.isP2P) {
             const role = this.room.getMemberRole(jingleSession.peerjid);
             if ('moderator' !== role) {
