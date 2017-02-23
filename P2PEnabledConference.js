@@ -31,7 +31,6 @@ export default class P2PEnabledConference extends JitsiConference {
      * participant has left.
      */
     constructor(options) {
-        // Call super
         super(options);
         // Original this.eventEmitter.emit method, stored to skip the event
         // filtering logic
