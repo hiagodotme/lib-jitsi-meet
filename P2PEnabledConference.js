@@ -781,7 +781,7 @@ export default class P2PEnabledConference extends JitsiConference {
 
 /**
  * This is a fake {@link ChatRoom} passed to the P2P {@link JingleSessionPC}
- * in order to capture events emitted on it's event emitter (Jingle session uses
+ * in order to capture events emitted on its event emitter (Jingle session uses
  * chat room's emitter to send events).
  */
 class FakeChatRoomLayer {
