@@ -638,16 +638,16 @@ export default class P2PEnabledConference extends JitsiConference {
      * @inheritDoc
      * @override
      */
-    onCallEnded (JingleSession, reasonCondition, reasonText) {
+    onCallEnded (jingleSession, reasonCondition, reasonText) {
         logger.info(
             "Call ended: " + reasonCondition + " - "
-            + reasonText + " P2P ?" + JingleSession.isP2P);
-        if (JingleSession === this.p2pJingleSession) {
+            + reasonText + " P2P ?" + jingleSession.isP2P);
+        if (jingleSession === this.p2pJingleSession) {
             // FIXME not sure if that's ok to not call the super
             // check CallStats and other things
             this._stopPeer2PeerSession();
         } else {
-            super.onCallEnded(JingleSession, reasonCondition, reasonText);
+            super.onCallEnded(jingleSession, reasonCondition, reasonText);
         }
     }
 
