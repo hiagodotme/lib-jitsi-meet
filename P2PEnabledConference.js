@@ -252,7 +252,7 @@ export default class P2PEnabledConference extends JitsiConference {
             return;
         }
         // Update P2P status and emit events
-        this._setNewP2PStatus(true);
+        this._setP2PStatus(true);
 
         // Remove remote tracks
         this._removeRemoteJVBTracks();
@@ -347,10 +347,10 @@ export default class P2PEnabledConference extends JitsiConference {
      * now in use.
      * @private
      */
-    _setNewP2PStatus (newStatus) {
+    _setP2PStatus (newStatus) {
         if (this.p2pEstablished === newStatus) {
             logger.error(
-                "Called _setNewP2PStatus with the same status: " + newStatus);
+                "Called _setP2PStatus with the same status: " + newStatus);
             return;
         }
         this.p2pEstablished = newStatus;
@@ -561,7 +561,7 @@ export default class P2PEnabledConference extends JitsiConference {
         // Clear fake room state
         this.p2pFakeRoom = null;
         // Update P2P status and other affected events/states
-        this._setNewP2PStatus(false);
+        this._setP2PStatus(false);
 
         // Start remote stats
         logger.info("Starting remote stats with JVB connection");
