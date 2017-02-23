@@ -1045,7 +1045,7 @@ function (jingleSession, jingleOffer, now) {
             // happen in case if user doesn't have or denied permission to
             // both camera and microphone.
             this.statistics.startCallStats(jingleSession);
-            this._ensureRemoteStatsRunning();
+            this._startRemoteStats();
         });
     } catch(e) {
         GlobalOnErrorHandler.callErrorHandler(e);
@@ -1099,7 +1099,7 @@ JitsiConference.prototype._rejectIncomingCall
  * available).
  * @private
  */
-JitsiConference.prototype._ensureRemoteStatsRunning = function () {
+JitsiConference.prototype._startRemoteStats = function () {
     if (this.jvbJingleSession)
         this.statistics.startRemoteStats(this.jvbJingleSession.peerconnection);
 };

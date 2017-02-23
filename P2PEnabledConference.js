@@ -242,14 +242,14 @@ export default class P2PEnabledConference extends JitsiConference {
      * @override
      * @private
      */
-    _ensureRemoteStatsRunning () {
+    _startRemoteStats () {
         if (this.p2pEstablished) {
             // Use remote starts from the P2P connection
             this.statistics.startRemoteStats(
                 this.peerToPeerSession.peerconnection);
         } else {
             // This will start remote stats for the JVB connection
-            super._ensureRemoteStatsRunning();
+            super._startRemoteStats();
         }
     }
 
@@ -281,7 +281,7 @@ export default class P2PEnabledConference extends JitsiConference {
 
         // Start remote stats
         logger.info("Starting remote stats with p2p connection");
-        this._ensureRemoteStatsRunning();
+        this._startRemoteStats();
     }
 
     /**
@@ -574,7 +574,7 @@ export default class P2PEnabledConference extends JitsiConference {
         // Start remote stats
         logger.info("Starting remote stats with JVB connection");
         if (this.jvbJingleSession) {
-            this._ensureRemoteStatsRunning();
+            this._startRemoteStats();
         }
     }
 
