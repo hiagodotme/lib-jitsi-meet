@@ -403,19 +403,6 @@ export default class P2PEnabledConference extends JitsiConference {
             return;
         }
 
-        /*if (!peerJid) {
-            const peers = this.getParticipants();
-            const peerCount = peers.length;
-
-            // Start peer to peer session
-            if (peerCount > 0) {
-                peerJid = peers[0].getJid();
-            } else {
-                logger.error("No JID to start the P2P session with !");
-                return;
-            }
-        }*/
-
         this.p2pJingleSession
             = this.xmpp.connection.jingle.newJingleSession(
                 this.room.myroomjid, peerJid);
