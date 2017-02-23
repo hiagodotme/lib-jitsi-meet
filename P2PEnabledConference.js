@@ -129,11 +129,11 @@ export default class P2PEnabledConference extends JitsiConference {
      * @override
      */
     _addLocalTrackAsUnmute (track) {
-        const all = [super._addLocalTrackAsUnmute(track)];
+        const allPromises = [super._addLocalTrackAsUnmute(track)];
         if (this.p2pJingleSession) {
-            all.push(this.p2pJingleSession.addTrackAsUnmute(track));
+            allPromises.push(this.p2pJingleSession.addTrackAsUnmute(track));
         }
-        return Promise.all(all);
+        return Promise.all(allPromises);
     }
 
     /**
@@ -210,11 +210,12 @@ export default class P2PEnabledConference extends JitsiConference {
      * @override
      */
     _doReplaceTrack (oldTrack, newTrack) {
-        const all = [super._doReplaceTrack(oldTrack, newTrack)];
+        const allPromises = [super._doReplaceTrack(oldTrack, newTrack)];
         if (this.p2pJingleSession) {
-            all.push(this.p2pJingleSession.replaceTrack(oldTrack, newTrack));
+            allPromises.push(
+                this.p2pJingleSession.replaceTrack(oldTrack, newTrack));
         }
-        return Promise.all(all);
+        return Promise.all(allPromises);
     }
 
     /**
@@ -330,11 +331,11 @@ export default class P2PEnabledConference extends JitsiConference {
      * @override
      */
     _removeTrackAsMute (track) {
-        const all = [super._removeTrackAsMute(track)];
+        const allPromises = [super._removeTrackAsMute(track)];
         if (this.p2pJingleSession) {
-            all.push(this.p2pJingleSession.removeTrackAsMute(track));
+            allPromises.push(this.p2pJingleSession.removeTrackAsMute(track));
         }
-        return Promise.all(all);
+        return Promise.all(allPromises);
     }
 
     /**
