@@ -482,6 +482,8 @@ export default class P2PEnabledConference extends JitsiConference {
                     return;
                 } else if (myId == peersId) {
                     logger.error("The same IDs ? ", myId, peersId);
+                    // Abort
+                    return;
                 }
             }
             const jid = peer.getJid();
