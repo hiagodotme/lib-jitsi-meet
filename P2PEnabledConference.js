@@ -238,22 +238,6 @@ export default class P2PEnabledConference extends JitsiConference {
     }
 
     /**
-     * @inheritDoc
-     * @override
-     * @private
-     */
-    _startRemoteStats () {
-        if (this.p2pEstablished) {
-            // Use remote starts from the P2P connection
-            this.statistics.startRemoteStats(
-                this.peerToPeerSession.peerconnection);
-        } else {
-            // This will start remote stats for the JVB connection
-            super._startRemoteStats();
-        }
-    }
-
-    /**
      * Called when {@link JitsiConferenceEvents.CONNECTION_ESTABLISHED} event is
      * triggered for the P2P session. Switches the conference to use the P2P
      * connection.
@@ -595,6 +579,19 @@ export default class P2PEnabledConference extends JitsiConference {
      */
     isP2PEstablished() {
         return this.p2pEstablished;
+    }
+
+    /**
+     * Will return P2P or JVB <tt>TraceablePeerConnection</tt> depending on
+     * which connection is currently active.
+     * @inheritDoc
+     * @override
+     * @protected
+     */
+    getActivePeerConnection () {
+        return this.isP2PEstablished()
+            ? this.peerToPeerSession.peerconnection
+            : super.getActivePeerConnection();
     }
 
     /**
