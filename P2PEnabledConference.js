@@ -525,9 +525,13 @@ export default class P2PEnabledConference extends JitsiConference {
 
     /**
      * Stops the current P2P session.
+     * @param {string} [reason="success"] one of the Jingle "reason" element
+     * names as defined by https://xmpp.org/extensions/xep-0166.html#def-reason
+     * @param {string} [reasonDescription="Turing off P2P session"] text
+     * description that will be included in the session terminate message
      * @private
      */
-    _stopPeer2PeerSession() {
+    _stopPeer2PeerSession(reason, reasonDescription) {
         if (!this.peerToPeerSession) {
             logger.error("No P2P session to be stopped!");
             return;
@@ -550,7 +554,9 @@ export default class P2PEnabledConference extends JitsiConference {
 
         if (JingleSessionState.ENDED !== this.peerToPeerSession.state) {
             this.peerToPeerSession.terminate(
-                'success', 'Turing off P2P session',
+                reason ? reason : "success",
+                reasonDescription
+                    ? reasonDescription : "Turing off P2P session",
                 () => { logger.info("P2P session terminate RESULT"); },
                 (error) => {
                     logger.warn(
@@ -844,7 +850,8 @@ class FakeChatRoomLayer {
                         self.p2pConf.onP2PIceConnectionRestored();
                         break;
                     case XMPPEvents.CONNECTION_ICE_FAILED:
-                        self.p2pConf._stopPeer2PeerSession();
+                        self.p2pConf._stopPeer2PeerSession(
+                            "connectivity-error", "ICE FAILED");
                         break;
                 }
             }
