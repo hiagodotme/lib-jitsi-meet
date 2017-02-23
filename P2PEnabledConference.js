@@ -395,7 +395,7 @@ export default class P2PEnabledConference extends JitsiConference {
      */
     _startPeer2PeerSession(peerJid) {
         if (this.deferredStartP2P) {
-            // Make not that the task has been executed
+            // Make note that the task has been executed
             this.deferredStartP2P = null;
         }
         if (this.p2pJingleSession) {
