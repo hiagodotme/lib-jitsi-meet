@@ -69,15 +69,15 @@ export default class P2PEnabledConference extends JitsiConference {
          */
         this.p2pEstablished = false;
         /**
-         * Fake <tt>ChatRoom</tt> passed to {@link peerToPeerSession}.
+         * Fake <tt>ChatRoom</tt> passed to {@link p2pJingleSession}.
          * @type {FakeChatRoomLayer}
          */
-        this.peerToPeerFakeRoom = null;
+        this.p2pFakeRoom = null;
         /**
          * A JingleSession for the direct peer to peer connection.
          * @type {JingleSessionPC}
          */
-        this.peerToPeerSession = null;
+        this.p2pJingleSession = null;
     }
 
     /**
@@ -92,20 +92,20 @@ export default class P2PEnabledConference extends JitsiConference {
         jingleSession.setSSRCOwnerJid(this.room.myroomjid);
 
         // Accept the offer
-        this.peerToPeerSession = jingleSession;
+        this.p2pJingleSession = jingleSession;
         // FIXME .P2P should be set initially in strophe.jingle.js
-        this.peerToPeerSession.isP2P = true;
-        this.peerToPeerFakeRoom = this._createFakeRoom(false);
-        this.peerToPeerSession.initialize(
-            false /* initiator */, this.peerToPeerFakeRoom, this.rtc);
+        this.p2pJingleSession.isP2P = true;
+        this.p2pFakeRoom = this._createFakeRoom(false);
+        this.p2pJingleSession.initialize(
+            false /* initiator */, this.p2pFakeRoom, this.rtc);
 
         const localTracks = this.getLocalTracks();
 
         logger.debug("Adding " + localTracks + " to P2P...");
-        this.peerToPeerSession.addLocalTracks(localTracks).then(
+        this.p2pJingleSession.addLocalTracks(localTracks).then(
             () => {
                 logger.debug("Add " + localTracks + " to P2P done!");
-                this.peerToPeerSession.acceptOffer(
+                this.p2pJingleSession.acceptOffer(
                     jingleOffer,
                     () => {
                         logger.debug("Got RESULT for P2P 'session-accept'");
@@ -130,8 +130,8 @@ export default class P2PEnabledConference extends JitsiConference {
      */
     _addLocalTrackAsUnmute (track) {
         const all = [super._addLocalTrackAsUnmute(track)];
-        if (this.peerToPeerSession) {
-            all.push(this.peerToPeerSession.addTrackAsUnmute(track));
+        if (this.p2pJingleSession) {
+            all.push(this.p2pJingleSession.addTrackAsUnmute(track));
         }
         return Promise.all(all);
     }
@@ -159,7 +159,7 @@ export default class P2PEnabledConference extends JitsiConference {
      * @private
      */
     _addP2PRemoteTracks () {
-        this._addRemoteTracks("P2P", this.peerToPeerSession);
+        this._addRemoteTracks("P2P", this.p2pJingleSession);
     }
 
     /**
@@ -211,8 +211,8 @@ export default class P2PEnabledConference extends JitsiConference {
      */
     _doReplaceTrack (oldTrack, newTrack) {
         const all = [super._doReplaceTrack(oldTrack, newTrack)];
-        if (this.peerToPeerSession) {
-            all.push(this.peerToPeerSession.replaceTrack(oldTrack, newTrack));
+        if (this.p2pJingleSession) {
+            all.push(this.p2pJingleSession.replaceTrack(oldTrack, newTrack));
         }
         return Promise.all(all);
     }
@@ -245,7 +245,7 @@ export default class P2PEnabledConference extends JitsiConference {
      * @private
      */
     _onP2PConnectionEstablished (jingleSession) {
-        if (this.peerToPeerSession !== jingleSession) {
+        if (this.p2pJingleSession !== jingleSession) {
             logger.error("CONNECTION_ESTABLISHED - not P2P session ?!");
             return;
         }
@@ -291,7 +291,7 @@ export default class P2PEnabledConference extends JitsiConference {
      * @private
      */
     _removeP2PRemoteTracks () {
-        this._removeRemoteTracks("P2P", this.peerToPeerSession);
+        this._removeRemoteTracks("P2P", this.p2pJingleSession);
     }
 
     /**
@@ -331,8 +331,8 @@ export default class P2PEnabledConference extends JitsiConference {
      */
     _removeTrackAsMute (track) {
         const all = [super._removeTrackAsMute(track)];
-        if (this.peerToPeerSession) {
-            all.push(this.peerToPeerSession.removeTrackAsMute(track));
+        if (this.p2pJingleSession) {
+            all.push(this.p2pJingleSession.removeTrackAsMute(track));
         }
         return Promise.all(all);
     }
@@ -396,7 +396,7 @@ export default class P2PEnabledConference extends JitsiConference {
             // Make not that the task has been executed
             this.deferredStartP2P = null;
         }
-        if (this.peerToPeerSession) {
+        if (this.p2pJingleSession) {
             logger.error("P2P session already started!");
             return;
         }
@@ -414,17 +414,17 @@ export default class P2PEnabledConference extends JitsiConference {
             }
         }*/
 
-        this.peerToPeerSession
+        this.p2pJingleSession
             = this.xmpp.connection.jingle.newJingleSession(
                 this.room.myroomjid, peerJid);
-        this.peerToPeerSession.setSSRCOwnerJid(this.room.myroomjid);
-        this.peerToPeerFakeRoom = this._createFakeRoom(true);
+        this.p2pJingleSession.setSSRCOwnerJid(this.room.myroomjid);
+        this.p2pFakeRoom = this._createFakeRoom(true);
 
         logger.info(
             "Created new P2P JingleSession", this.room.myroomjid, peerJid);
 
-        this.peerToPeerSession.initialize(
-            true /* initiator */, this.peerToPeerFakeRoom, this.rtc);
+        this.p2pJingleSession.initialize(
+            true /* initiator */, this.p2pFakeRoom, this.rtc);
 
         // NOTE one may consider to start P2P with the local tracks detached,
         // but no data will be sent until ICE succeeds anyway. And we switch
@@ -432,11 +432,11 @@ export default class P2PEnabledConference extends JitsiConference {
         const localTracks = this.getLocalTracks();
 
         logger.info("Adding " + localTracks + " to P2P...");
-        this.peerToPeerSession.addLocalTracks(localTracks).then(
+        this.p2pJingleSession.addLocalTracks(localTracks).then(
             () => {
                 logger.info("Added " + localTracks + " to P2P");
                 logger.info("About to send P2P 'session-initiate'...");
-                this.peerToPeerSession.invite();
+                this.p2pJingleSession.invite();
             },
             (error) => {
                 logger.error("Failed to add " + localTracks + " to P2P", error);
@@ -472,7 +472,7 @@ export default class P2PEnabledConference extends JitsiConference {
             this.deferredStartP2P = null;
         }
         // Start peer to peer session
-        if (isModerator && !this.peerToPeerSession && shouldBeInP2P) {
+        if (isModerator && !this.p2pJingleSession && shouldBeInP2P) {
             const peer = peerCount && peers[0];
 
             // Everyone is a moderator ?
@@ -506,9 +506,9 @@ export default class P2PEnabledConference extends JitsiConference {
                 logger.info("Will start P2P with: " + jid);
                 this._startPeer2PeerSession(jid);
             }
-        } else if (isModerator && this.peerToPeerSession && !shouldBeInP2P){
+        } else if (isModerator && this.p2pJingleSession && !shouldBeInP2P){
             logger.info(
-                "Will stop P2P with: " + this.peerToPeerSession.peerjid);
+                "Will stop P2P with: " + this.p2pJingleSession.peerjid);
             this._stopPeer2PeerSession();
         }
     }
@@ -522,7 +522,7 @@ export default class P2PEnabledConference extends JitsiConference {
      * @private
      */
     _stopPeer2PeerSession(reason, reasonDescription) {
-        if (!this.peerToPeerSession) {
+        if (!this.p2pJingleSession) {
             logger.error("No P2P session to be stopped!");
             return;
         }
@@ -542,8 +542,8 @@ export default class P2PEnabledConference extends JitsiConference {
         logger.info("Stopping remote stats with P2P connection");
         this.statistics.stopRemoteStats();
 
-        if (JingleSessionState.ENDED !== this.peerToPeerSession.state) {
-            this.peerToPeerSession.terminate(
+        if (JingleSessionState.ENDED !== this.p2pJingleSession.state) {
+            this.p2pJingleSession.terminate(
                 reason ? reason : "success",
                 reasonDescription
                     ? reasonDescription : "Turing off P2P session",
@@ -555,9 +555,9 @@ export default class P2PEnabledConference extends JitsiConference {
                 });
         }
 
-        this.peerToPeerSession = null;
+        this.p2pJingleSession = null;
         // Clear fake room state
-        this.peerToPeerFakeRoom = null;
+        this.p2pFakeRoom = null;
         // Update P2P status and other affected events/states
         this._setNewP2PStatus(false);
 
@@ -596,7 +596,7 @@ export default class P2PEnabledConference extends JitsiConference {
      */
     getActivePeerConnection () {
         return this.isP2PEstablished()
-            ? this.peerToPeerSession.peerconnection
+            ? this.p2pJingleSession.peerconnection
             : super.getActivePeerConnection();
     }
 
@@ -619,8 +619,8 @@ export default class P2PEnabledConference extends JitsiConference {
      * no P2P connection.
      */
     getP2PConnectionState() {
-        if (this.p2pEstablished && this.peerToPeerSession) {
-            return this.peerToPeerSession.getIceConnectionState();
+        if (this.p2pEstablished && this.p2pJingleSession) {
+            return this.p2pJingleSession.getIceConnectionState();
         } else {
             return null;
         }
@@ -631,9 +631,9 @@ export default class P2PEnabledConference extends JitsiConference {
      * @override
      */
     onCallAccepted (jingleSession, answer) {
-        if (this.peerToPeerSession === jingleSession) {
+        if (this.p2pJingleSession === jingleSession) {
             logger.info("Doing setAnswer");
-            this.peerToPeerSession.setAnswer(answer);
+            this.p2pJingleSession.setAnswer(answer);
         }
     }
 
@@ -645,7 +645,7 @@ export default class P2PEnabledConference extends JitsiConference {
         logger.info(
             "Call ended: " + reasonCondition + " - "
             + reasonText + " P2P ?" + JingleSession.isP2P);
-        if (JingleSession === this.peerToPeerSession) {
+        if (JingleSession === this.p2pJingleSession) {
             // FIXME not sure if that's ok to not call the super
             // check CallStats and other things
             this._stopPeer2PeerSession();
@@ -665,7 +665,7 @@ export default class P2PEnabledConference extends JitsiConference {
             if ('moderator' !== role) {
                 // Reject incoming P2P call
                 this._rejectIncomingCallNonModerator(jingleSession);
-            } else if (this.peerToPeerSession) {
+            } else if (this.p2pJingleSession) {
                 // Reject incoming P2P call (already in progress)
                 this._rejectIncomingCall(
                     jingleSession,
@@ -754,9 +754,9 @@ export default class P2PEnabledConference extends JitsiConference {
      * @override
      */
     onTransportInfo (jingleSession, transportInfo) {
-        if (this.peerToPeerSession === jingleSession) {
+        if (this.p2pJingleSession === jingleSession) {
             logger.info("Doing set transport-info");
-            this.peerToPeerSession.addIceCandidates(transportInfo);
+            this.p2pJingleSession.addIceCandidates(transportInfo);
         }
     }
 
