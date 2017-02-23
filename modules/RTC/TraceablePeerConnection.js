@@ -1107,6 +1107,17 @@ TraceablePeerConnection.prototype._removeStream = function (mediaStream) {
     }
 };
 
+/**
+ * This method when called will check if given <tt>localTrack</tt> belongs to
+ * this TPC (that it has been previously added using {@link addTrack}). If the
+ * track does not belong an error message will be logged.
+ * @param {string} methodName the method name that will be logged in an error
+ * message
+ * @param {JitsiLocalTrack} localTrack
+ * @return {boolean} <tt>true</tt> if given local track belongs to this TPC or
+ * <tt>false</tt> otherwise.
+ * @private
+ */
 TraceablePeerConnection.prototype._assertTrackBelongs
 = function (methodName, localTrack) {
     const doesBelong = !!this.localTracks[localTrack.rtcId];
@@ -1117,10 +1128,28 @@ TraceablePeerConnection.prototype._assertTrackBelongs
     return doesBelong;
 };
 
-TraceablePeerConnection.prototype.isTrackAttached = function (localTrack) {
+/**
+ * Checks whether given track is attached to this TPC. See
+ * {@link JitsiLocalTrack._isAttachedToPC} and {@link attachTrack} for more
+ * info.
+ * @param {JitsiLocalTrack} localTrack
+ * @return {boolean} <tt>true</tt> if attached or <tt>false</tt> otherwise
+ * @private
+ */
+TraceablePeerConnection.prototype._isTrackAttached = function (localTrack) {
     return localTrack._isAttachedToPC(this);
 };
 
+/**
+ * Detaches given local track from this peer connection. A detached track will
+ * be removed from the underlying <tt>PeerConnection</tt>, but it will remain
+ * associated with this TPC. The {@link MungeLocalSdp} module will fake the
+ * local description exposed to {@link JingleSessionPC} in the way that track's
+ * SSRC will be still on place. It will prevent from any signalling updates and
+ * make other participants think that the track is still there even though they
+ * will receive no data for the underlying media stream.
+ * @param {JitsiLocalTrack} localTrack
+ */
 TraceablePeerConnection.prototype.detachTrack = function (localTrack) {
 
     if (!this._assertTrackBelongs("detachTrack", localTrack)) {
@@ -1149,6 +1178,13 @@ TraceablePeerConnection.prototype.detachTrack = function (localTrack) {
     logger.debug("Detached " + localTrack + " from " + this);
 };
 
+/**
+ * This operation reverts {@link detachTrack} (see for more info). The
+ * underlying <tt>MediaStream</tt> will be added back to the peer connection
+ * and {@link MungeLocalSdp} module will no longer fake it's SSRC through the
+ * local description exposed to {@link JingleSessionPC}.
+ * @param {JitsiLocalTrack} localTrack
+ */
 TraceablePeerConnection.prototype.attachTrack = function (localTrack) {
 
     if (!this._assertTrackBelongs("attachTrack", localTrack)) {
@@ -1200,7 +1236,7 @@ TraceablePeerConnection.prototype.removeTrack = function (localTrack) {
     delete this.localTracks[localTrack.rtcId];
     delete this.localSSRCs[localTrack.rtcId];
     // A detached track will not require removal
-    if (this.isTrackAttached(localTrack)) {
+    if (this._isTrackAttached(localTrack)) {
         localTrack._removePeerConnection(this);
     }
 

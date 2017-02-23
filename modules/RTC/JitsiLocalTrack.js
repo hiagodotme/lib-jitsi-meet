@@ -54,6 +54,11 @@ function JitsiLocalTrack(rtcId, stream, track, mediaType, videoType, resolution,
     this.startMuted = false;
     this.storedMSID = this.getMSID();
     this.inMuteOrUnmuteProgress = false;
+    /**
+     * An array which stores the peer connection to which this local track is
+     * currently attached to. See {@link TraceablePeerConnection.attachTrack}.
+     * @type {Array<TraceablePeerConnection>}
+     */
     this.peerConnections = [];
 
     /**
@@ -152,6 +157,14 @@ JitsiLocalTrack.prototype._removePeerConnection = function (tpc) {
     }
 };
 
+/**
+ * Checks whether or not this instance is attached to given
+ * <tt>TraceablePeerConnection</tt>. See
+ * {@link TraceablePeerConnection.attachTrack} for more info.
+ * @param {TraceablePeerConnection.attachTrack} tpc
+ * @return {boolean} <tt>true</tt> if this tracks is currently attached to given
+ * peer connection or <tt>false</tt> otherwise.
+ */
 JitsiLocalTrack.prototype._isAttachedToPC = function (tpc) {
     return this.peerConnections.indexOf(tpc) !== -1;
 };
