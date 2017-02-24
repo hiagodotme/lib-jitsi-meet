@@ -162,19 +162,19 @@ export default class P2PEnabledConference extends JitsiConference {
     }
 
     /**
-     * Adds remote tracks to the conference associated with the P2P session.
-     * @private
-     */
-    _addP2PRemoteTracks () {
-        this._addRemoteTracks("P2P", this.p2pJingleSession);
-    }
-
-    /**
      * Adds remote tracks to the conference associated with the JVB session.
      * @private
      */
     _addRemoteJVBTracks () {
         this._addRemoteTracks("JVB", this.jvbJingleSession);
+    }
+
+    /**
+     * Adds remote tracks to the conference associated with the P2P session.
+     * @private
+     */
+    _addRemoteP2PTracks () {
+        this._addRemoteTracks("P2P", this.p2pJingleSession);
     }
 
     /**
@@ -264,7 +264,7 @@ export default class P2PEnabledConference extends JitsiConference {
         // Remove remote tracks
         this._removeRemoteJVBTracks();
         // Add remote tracks
-        this._addP2PRemoteTracks();
+        this._addRemoteP2PTracks();
         // Remove local tracks from JVB PC
         // But only if it has started
         if (this.jvbJingleSession) {
@@ -295,21 +295,21 @@ export default class P2PEnabledConference extends JitsiConference {
     }
 
     /**
-     * Removes from the conference remote tracks associated with the P2P
-     * connection.
-     * @private
-     */
-    _removeP2PRemoteTracks () {
-        this._removeRemoteTracks("P2P", this.p2pJingleSession);
-    }
-
-    /**
      * Removes from the conference remote tracks associated with the JVB
      * connection.
      * @private
      */
     _removeRemoteJVBTracks () {
         this._removeRemoteTracks("JVB", this.jvbJingleSession);
+    }
+
+    /**
+     * Removes from the conference remote tracks associated with the P2P
+     * connection.
+     * @private
+     */
+    _removeRemoteP2PTracks () {
+        this._removeRemoteTracks("P2P", this.p2pJingleSession);
     }
 
     /**
@@ -531,7 +531,7 @@ export default class P2PEnabledConference extends JitsiConference {
         // Swap remote tracks, but only if the P2P has been fully established
         if (this.p2pEstablished) {
             // Remove remote P2P tracks
-            this._removeP2PRemoteTracks();
+            this._removeRemoteP2PTracks();
             // Add back remote JVB tracks
             this._addRemoteJVBTracks();
         }
