@@ -108,12 +108,14 @@ JitsiConference.prototype._init = function (options) {
     this.room = this.xmpp.createRoom(this.options.name, this.options.config);
 
     // Connection interrupted/restored listeners
-    this._onConnectionInterrupted = this.onIceConnectionInterrupted.bind(this);
+    this._onIceConnectionInterrupted
+        = this._onIceConnectionInterrupted.bind(this);
     this.room.addListener(
-        XMPPEvents.CONNECTION_INTERRUPTED, this._onConnectionInterrupted);
-    this._onConnectionRestored = this.onIceConnectionRestored.bind(this);
+        XMPPEvents.CONNECTION_INTERRUPTED, this._onIceConnectionInterrupted);
+
+    this._onIceConnectionRestored = this._onIceConnectionRestored.bind(this);
     this.room.addListener(
-        XMPPEvents.CONNECTION_RESTORED, this._onConnectionRestored);
+        XMPPEvents.CONNECTION_RESTORED, this._onIceConnectionRestored);
 
     this.room.updateDeviceAvailability(RTC.getDeviceAvailability());
 
@@ -192,9 +194,11 @@ JitsiConference.prototype.leave = function () {
 
         // Unregister connection state listeners
         room.removeListener(
-            XMPPEvents.CONNECTION_INTERRUPTED, this._onConnectionInterrupted);
+            XMPPEvents.CONNECTION_INTERRUPTED,
+            this._onIceConnectionInterrupted);
         room.removeListener(
-            XMPPEvents.CONNECTION_RESTORED, this._onConnectionRestored);
+            XMPPEvents.CONNECTION_RESTORED,
+            this._onIceConnectionRestored);
 
         this.room = null;
         return room.leave().catch(() => {
@@ -1522,16 +1526,18 @@ JitsiConference.prototype.isConnectionInterrupted = function () {
 
 /**
  * Handles {@link XMPPEvents.CONNECTION_INTERRUPTED}
+ * @private
  */
-JitsiConference.prototype.onIceConnectionInterrupted = function () {
+JitsiConference.prototype._onIceConnectionInterrupted = function () {
     this.connectionIsInterrupted = true;
     this.eventEmitter.emit(JitsiConferenceEvents.CONNECTION_INTERRUPTED);
 };
 
 /**
  * Handles {@link XMPPEvents.CONNECTION_RESTORED}
+ * @private
  */
-JitsiConference.prototype.onIceConnectionRestored = function () {
+JitsiConference.prototype._onIceConnectionRestored = function () {
     this.connectionIsInterrupted = false;
     this.eventEmitter.emit(JitsiConferenceEvents.CONNECTION_RESTORED);
 };
