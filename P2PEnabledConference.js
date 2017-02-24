@@ -735,11 +735,13 @@ export default class P2PEnabledConference extends JitsiConference {
     startPeer2PeerSession() {
         const peers = this.getParticipants();
         // Start peer to peer session
-        if (peers.length > 0) {
+        if (peers.length === 1) {
             const peerJid = peers[0].getJid();
             this._startPeer2PeerSession(peerJid);
         } else {
-            logger.error("No participant to start the P2P session with !");
+            throw new Error(
+                "There must be exactly 1 participant "
+                    + "to start the P2P session !");
         }
     }
 
