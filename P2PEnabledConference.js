@@ -100,8 +100,6 @@ export default class P2PEnabledConference extends JitsiConference {
 
         // Accept the offer
         this.p2pJingleSession = jingleSession;
-        // FIXME .P2P should be set initially in strophe.jingle.js
-        this.p2pJingleSession.isP2P = true;
         this.p2pFakeRoom = new FakeChatRoomLayer(this, false /* isInitiator */);
         this.p2pJingleSession.initialize(
             false /* initiator */, this.p2pFakeRoom, this.rtc);
