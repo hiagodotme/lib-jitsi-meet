@@ -84,6 +84,7 @@ function JitsiConference(options) {
     this.connectionIsInterrupted = false;
 
 }
+//FIXME convert JitsiConference to ES6 - ASAP !
 JitsiConference.prototype.constructor = JitsiConference;
 
 /**
