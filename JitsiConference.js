@@ -1315,12 +1315,12 @@ JitsiConference.prototype.getPhonePin = function () {
 
 /**
  * Obtains currently active <tt>TraceablePeerConnection</tt> (if any).
- * @return {TraceablePeerConnection|undefined}
+ * @return {TraceablePeerConnection|null}
  * @protected
  */
 JitsiConference.prototype.getActivePeerConnection = function () {
     return this.jvbJingleSession
-        ? this.jvbJingleSession.peerconnection : undefined;
+        ? this.jvbJingleSession.peerconnection : null;
 };
 
 /**
