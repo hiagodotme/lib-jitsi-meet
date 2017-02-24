@@ -845,9 +845,9 @@ class FakeChatRoomLayer {
      */
     addPresenceListener (name, handler) {
         // Forward to origin ChatRoom
-        this._forwardToChatRoom((room => {
+        this._forwardToChatRoom(room => {
             room.addPresenceListener(name, handler);
-        }));
+        });
     }
 
     /**
@@ -855,7 +855,7 @@ class FakeChatRoomLayer {
      */
     getMediaPresenceInfo (endpointId, mediaType) {
         let result = null;
-        this._forwardToChatRoom((room) =>{
+        this._forwardToChatRoom(room => {
             result = room.getMediaPresenceInfo(endpointId, mediaType);
         });
         return result;
@@ -865,8 +865,6 @@ class FakeChatRoomLayer {
      * @see SignallingLayer.removePresenceListener
      */
     removePresenceListener (name) {
-        this._forwardToChatRoom((room) => {
-            room.removePresenceListener(name);
-        });
+        this._forwardToChatRoom(room => room.removePresenceListener(name));
     }
 }
