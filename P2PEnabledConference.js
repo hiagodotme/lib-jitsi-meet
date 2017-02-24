@@ -102,7 +102,7 @@ export default class P2PEnabledConference extends JitsiConference {
         this.p2pJingleSession = jingleSession;
         // FIXME .P2P should be set initially in strophe.jingle.js
         this.p2pJingleSession.isP2P = true;
-        this.p2pFakeRoom = this._createFakeRoom(false);
+        this.p2pFakeRoom = new FakeChatRoomLayer(this, false /* isInitiator */);
         this.p2pJingleSession.initialize(
             false /* initiator */, this.p2pFakeRoom, this.rtc);
 
@@ -198,18 +198,6 @@ export default class P2PEnabledConference extends JitsiConference {
                 this.rtc.eventEmitter.emit(
                     RTCEvents.REMOTE_TRACK_ADDED, track);
             });
-    }
-
-    /**
-     * Creates fake {@link ChatRoom} which is to be used by the P2P Jingle
-     * Session.
-     * @param {boolean} isInitiator indicates whether the room is to be create
-     * for 'initiator' or 'responder'
-     * @return {FakeChatRoomLayer}
-     * @private
-     */
-    _createFakeRoom(isInitiator) {
-        return new FakeChatRoomLayer(this, isInitiator);
     }
 
     /**
@@ -414,7 +402,7 @@ export default class P2PEnabledConference extends JitsiConference {
             = this.xmpp.connection.jingle.newJingleSession(
                 this.room.myroomjid, peerJid);
         this.p2pJingleSession.setSSRCOwnerJid(this.room.myroomjid);
-        this.p2pFakeRoom = this._createFakeRoom(true);
+        this.p2pFakeRoom = new FakeChatRoomLayer(this, true /* isInitiator */);
 
         logger.info(
             "Created new P2P JingleSession", this.room.myroomjid, peerJid);
