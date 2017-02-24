@@ -95,7 +95,6 @@ export default class P2PEnabledConference extends JitsiConference {
      * @private
      */
     _acceptP2PIncomingCall (jingleSession, jingleOffer) {
-
         jingleSession.setSSRCOwnerJid(this.room.myroomjid);
 
         // Accept the offer
