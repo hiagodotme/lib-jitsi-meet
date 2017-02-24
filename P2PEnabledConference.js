@@ -314,21 +314,21 @@ export default class P2PEnabledConference extends JitsiConference {
 
     /**
      * Generates fake "remote track removed" events for given Jingle session.
-     * @param {string} logName the session's nickname which will appear in log
+     * @param {string} nickname the session's nickname which will appear in log
      * messages.
      * @param {JingleSessionPC} jingleSession the session for which remote
      * tracks will be removed.
      * @private
      */
-    _removeRemoteTracks (logName, jingleSession) {
+    _removeRemoteTracks (nickname, jingleSession) {
         if (!jingleSession) {
             logger.info(
-                "Not removing remote " + logName + " tracks - no session yet");
+                "Not removing remote " + nickname + " tracks - no session yet");
             return;
         }
         jingleSession.peerconnection.getRemoteTracks().forEach(
             (track) => {
-                logger.info("Removing remote " + logName + " track: " + track);
+                logger.info("Removing remote " + nickname + " track: " + track);
                 this.rtc.eventEmitter.emit(
                     RTCEvents.REMOTE_TRACK_REMOVED, track);
             });
