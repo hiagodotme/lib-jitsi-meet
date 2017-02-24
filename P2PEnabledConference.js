@@ -795,7 +795,7 @@ class FakeChatRoomLayer {
 
     /**
      * Creates fake event emitter used to intercept some of the XMPP events
-     * coming from the P2P JingleSession.
+     * emitted by {@link P2PEnabledConference.p2pJingleSession}.
      * @return {EventEmitter}
      * @private
      */
