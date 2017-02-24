@@ -190,12 +190,10 @@ export default class P2PEnabledConference extends JitsiConference {
             return;
         }
         const remoteTracks = jingleSession.peerconnection.getRemoteTracks();
-        remoteTracks.forEach(
-            (track) => {
-                logger.info("Adding remote " + logName + " track: " + track);
-                this.rtc.eventEmitter.emit(
-                    RTCEvents.REMOTE_TRACK_ADDED, track);
-            });
+        for (const track of remoteTracks) {
+            logger.info("Adding remote " + logName + " track: " + track);
+            this.rtc.eventEmitter.emit(RTCEvents.REMOTE_TRACK_ADDED, track);
+        }
     }
 
     /**
@@ -312,12 +310,11 @@ export default class P2PEnabledConference extends JitsiConference {
                 "Not removing remote " + nickname + " tracks - no session yet");
             return;
         }
-        jingleSession.peerconnection.getRemoteTracks().forEach(
-            (track) => {
-                logger.info("Removing remote " + nickname + " track: " + track);
-                this.rtc.eventEmitter.emit(
-                    RTCEvents.REMOTE_TRACK_REMOVED, track);
-            });
+        const remoteTracks = jingleSession.peerconnection.getRemoteTracks();
+        for (const track of remoteTracks) {
+            logger.info("Removing remote " + nickname + " track: " + track);
+            this.rtc.eventEmitter.emit(RTCEvents.REMOTE_TRACK_REMOVED, track);
+        }
     }
 
     /**
