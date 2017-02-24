@@ -1,12 +1,13 @@
 /* global __filename */
 
 import {getLogger} from "jitsi-meet-logger";
-const logger = getLogger(__filename);
 import * as JingleSessionState from "./modules/xmpp/JingleSessionState";
 import JitsiConference from "./JitsiConference";
 import * as JitsiConferenceEvents from "./JitsiConferenceEvents";
 import * as RTCEvents from "./service/RTC/RTCEvents";
 import * as XMPPEvents from "./service/xmpp/XMPPEvents";
+
+const logger = getLogger(__filename);
 
 /**
  * A peer to peer enabled conference that will try to use direct connection when
